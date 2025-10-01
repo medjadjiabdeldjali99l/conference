@@ -12,7 +12,7 @@ export default function AdminPage() {
     if (pendingQuestions.length === 1 && currentQuestion === null) {
       showNextQuestion();
     }
-  }, [pendingQuestions.length]);
+  }, [pendingQuestions.length, currentQuestion]);
 
   useEffect(() => {
     loadQuestions();
