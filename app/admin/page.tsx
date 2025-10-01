@@ -215,11 +215,9 @@ export default function AdminPage() {
               )}
             </div>
           </div>
-
-          {/* File d'attente */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              ⏳ File d'attente ({pendingQuestions.length})
+              ⏳ File d&apos;attente ({pendingQuestions.length})
             </h2>
 
             {pendingQuestions.length === 0 ? (

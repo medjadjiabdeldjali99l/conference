@@ -36,7 +36,7 @@ export default function PublicForm() {
       }
     } catch (error) {
       console.error("Erreur:", error);
-      alert("❌ Erreur lors de l'envoi");
+      alert("❌ Erreur lors de l&apos;envoi");
     } finally {
       setIsSubmitting(false);
     }
