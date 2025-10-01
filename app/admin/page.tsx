@@ -1,203 +1,273 @@
+// app/admin/page.tsx
 "use client";
 import { useState, useEffect } from "react";
 import { Question } from "@/types/question";
 
-export default function Admin() {
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+export default function AdminPage() {
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
+  const [pendingQuestions, setPendingQuestions] = useState<Question[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Polling simple toutes les 3 secondes
   useEffect(() => {
-    const fetchQuestions = async () => {
-      try {
-        const res = await fetch("/api/questions");
-        const data: Question[] = await res.json();
-        setQuestions(data);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Erreur:", error);
-        setIsLoading(false);
-      }
-    };
+    if (pendingQuestions.length === 1 && currentQuestion === null) {
+      showNextQuestion();
+    }
+  }, [pendingQuestions.length]);
 
-    fetchQuestions(); // Premier chargement
-    const interval = setInterval(fetchQuestions, 3000); // Refresh auto
-
+  useEffect(() => {
+    loadQuestions();
+    // Polling toutes les 2 secondes pour les nouvelles questions
+    const interval = setInterval(loadQuestions, 2000);
     return () => clearInterval(interval);
   }, []);
 
-  const deleteQuestion = async (id: number): Promise<void> => {
+  const loadQuestions = async (): Promise<void> => {
     try {
-      await fetch(`/api/questions?id=${id}`, { method: "DELETE" });
-      setQuestions((prev) => prev.filter((q) => q.id !== id));
+      const [currentRes, pendingRes] = await Promise.all([
+        fetch("/api/admin/current"),
+        fetch("/api/admin/pending"),
+      ]);
 
-      // Ajuster l'index si nécessaire
-      if (currentIndex >= questions.length - 1) {
-        setCurrentIndex(Math.max(0, questions.length - 2));
+      if (currentRes.ok) {
+        const current = await currentRes.json();
+        setCurrentQuestion(current);
+      }
+
+      if (pendingRes.ok) {
+        const pending = await pendingRes.json();
+        setPendingQuestions(pending);
       }
     } catch (error) {
       console.error("Erreur:", error);
-      alert("Erreur lors de la suppression");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const currentQuestion: Question | undefined = questions[currentIndex];
+  const showNextQuestion = async (): Promise<void> => {
+    if (pendingQuestions.length === 0) return;
+
+    try {
+      const nextQuestion = pendingQuestions[0];
+      const response = await fetch("/api/admin/next", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: nextQuestion.id }),
+      });
+
+      if (response.ok) {
+        await loadQuestions();
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+    }
+  };
+
+  const markAsRead = async (): Promise<void> => {
+    if (!currentQuestion) return;
+
+    try {
+      const response = await fetch("/api/admin/read", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: currentQuestion.id }),
+      });
+
+      if (response.ok) {
+        await loadQuestions();
+      }
+      showNextQuestion();
+    } catch (error) {
+      console.error("Erreur:", error);
+    }
+  };
+
+  const showPreviousQuestion = async (): Promise<void> => {
+    try {
+      const response = await fetch("/api/admin/previous", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        await loadQuestions();
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+    }
+  };
+
+  const deleteQuestion = async (id: number): Promise<void> => {
+    try {
+      const response = await fetch(`/api/admin/delete?id=${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        await loadQuestions();
+      }
+      showNextQuestion();
+    } catch (error) {
+      console.error("Erreur:", error);
+    }
+  };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement des questions...</p>
-        </div>
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-xl">Chargement...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            🎤 Tableau de Bord Questions
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h1 className="text-3xl font-bold text-gray-800 text-center">
+            🎯 Tableau de Bord Admin - Questions
           </h1>
-          <p className="text-gray-600">Questions reçues en temps réel</p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6 text-center border border-blue-100">
-            <div className="text-3xl font-bold text-blue-600">
-              {questions.length}
+          <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">
+                {pendingQuestions.length}
+              </div>
+              <div className="text-sm text-blue-800">En attente</div>
             </div>
-            <div className="text-gray-600 text-sm mt-1">Total questions</div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-6 text-center border border-green-100">
-            <div className="text-3xl font-bold text-green-600">
-              {currentIndex + 1}
+            <div className="bg-green-50 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">
+                {currentQuestion ? 1 : 0}
+              </div>
+              <div className="text-sm text-green-800">Actuelle</div>
             </div>
-            <div className="text-gray-600 text-sm mt-1">Question actuelle</div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-6 text-center border border-purple-100">
-            <div className="text-3xl font-bold text-purple-600">
-              {questions.length > 0 ? "🟢" : "🔴"}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-gray-600">
+                {pendingQuestions.length + (currentQuestion ? 1 : 0)}
+              </div>
+              <div className="text-sm text-gray-800">Total</div>
             </div>
-            <div className="text-gray-600 text-sm mt-1">Statut</div>
           </div>
         </div>
 
-        {/* Question Card */}
-        {currentQuestion ? (
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-            {/* Question Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h2 className="text-2xl font-bold">
-                    {currentQuestion.prenom}
-                  </h2>
-                  <p className="text-blue-100 opacity-90 mt-1">
-                    {new Date(currentQuestion.created_at).toLocaleString(
-                      "fr-FR"
-                    )}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Question Actuelle */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                📊 Question Actuelle
+              </h2>
+
+              {currentQuestion ? (
+                <div className="border-2 border-green-500 rounded-lg p-6 bg-green-50">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      {currentQuestion.prenom}
+                    </h3>
+                    <span className="text-sm text-gray-500">
+                      {new Date(
+                        currentQuestion.created_at
+                      ).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <p className="text-gray-700 text-lg mb-6">
+                    {currentQuestion.question}
                   </p>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={markAsRead}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      ✅ Marquer comme lu
+                    </button>
+                    <button
+                      onClick={showPreviousQuestion}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      ⬅️ Précédent
+                    </button>
+                    <button
+                      onClick={() => deleteQuestion(currentQuestion.id)}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      🗑️ Supprimer
+                    </button>
+                  </div>
                 </div>
-                <span className="bg-white text-blue-600 px-3 py-1 rounded-full text-sm font-semibold">
-                  #{currentQuestion.id}
-                </span>
-              </div>
-            </div>
-
-            {/* Question Content */}
-            <div className="p-8">
-              <div className="prose max-w-none">
-                <p className="text-xl text-gray-800 leading-relaxed bg-blue-50 p-6 rounded-lg border-l-4 border-blue-500">
-                  {currentQuestion.question}
-                </p>
-              </div>
-
-              {/* Actions */}
-              <div className="flex flex-wrap gap-4 mt-8 pt-6 border-t border-gray-200">
-                <button
-                  onClick={() => deleteQuestion(currentQuestion.id)}
-                  className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-md flex items-center gap-2"
-                >
-                  <span>🗑️ Supprimer</span>
-                </button>
-
-                <button
-                  onClick={() =>
-                    setCurrentIndex((prev) =>
-                      Math.min(prev + 1, questions.length - 1)
-                    )
-                  }
-                  disabled={currentIndex >= questions.length - 1}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <span>⏭️ Suivante</span>
-                </button>
-
-                <button
-                  onClick={() =>
-                    setCurrentIndex((prev) => Math.max(prev - 1, 0))
-                  }
-                  disabled={currentIndex === 0}
-                  className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <span>⏮️ Précédente</span>
-                </button>
-
-                <button
-                  onClick={() => setCurrentIndex(0)}
-                  disabled={currentIndex === 0}
-                  className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <span>⏪ Première</span>
-                </button>
-              </div>
+              ) : (
+                <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <div className="text-6xl mb-4">📭</div>
+                  <p className="text-gray-600 text-lg">
+                    Aucune question en cours
+                  </p>
+                  {pendingQuestions.length > 0 && (
+                    <button
+                      onClick={showNextQuestion}
+                      className="mt-4 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
+                    >
+                      Afficher la question
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
-        ) : (
-          // Empty State
-          <div className="bg-white rounded-2xl shadow-xl p-12 text-center border border-gray-200">
-            <div className="text-6xl mb-4">📭</div>
-            <h3 className="text-2xl font-bold text-gray-700 mb-2">
-              Aucune question pour le moment
-            </h3>
-            <p className="text-gray-500 max-w-md mx-auto">
-              Les questions apparaîtront ici dès que les participants en
-              enverront.
-            </p>
-          </div>
-        )}
 
-        {/* Navigation Info */}
-        {questions.length > 0 && (
-          <div className="mt-6 bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div className="flex justify-between items-center">
-              <div>
-                <span className="text-gray-600">
-                  Navigation: {currentIndex + 1} / {questions.length}
-                </span>
+          {/* File d'attente */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              ⏳ File d'attente ({pendingQuestions.length})
+            </h2>
+
+            {pendingQuestions.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <div className="text-4xl mb-2">🎉</div>
+                Aucune question en attente
               </div>
-              <div className="flex gap-2">
-                {questions.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentIndex(index)}
-                    className={`w-3 h-3 rounded-full transition-all ${
-                      index === currentIndex
-                        ? "bg-blue-600 scale-125"
-                        : "bg-gray-300 hover:bg-gray-400"
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {pendingQuestions.map((question, index) => (
+                  <div
+                    key={question.id}
+                    className={`border rounded-lg p-4 ${
+                      index === 0
+                        ? "border-yellow-500 bg-yellow-50"
+                        : "border-gray-200 bg-gray-50"
                     }`}
-                  />
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="font-semibold text-gray-800">
+                        {question.prenom}
+                      </span>
+                      {index === 0 && (
+                        <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded">
+                          Suivante
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                      {question.question}
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500">
+                        {new Date(question.created_at).toLocaleTimeString()}
+                      </span>
+                      <button
+                        onClick={() => deleteQuestion(question.id)}
+                        className="text-red-600 hover:text-red-800 text-xs"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

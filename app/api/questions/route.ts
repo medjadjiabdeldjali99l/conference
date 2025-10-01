@@ -34,12 +34,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const ip = getClientIP(request);
     const questionCount = await countQuestionsByIP(ip);
 
-    if (questionCount >= 3) {
-      return NextResponse.json(
-        { error: "Limite de 3 questions atteinte" },
-        { status: 429 }
-      );
-    }
+    // if (questionCount >= 10) {
+    //   return NextResponse.json(
+    //     { error: "Limite de 10 questions atteinte" },
+    //     { status: 429 }
+    //   );
+    // }
 
     const id = await addQuestion(prenom, question, ip);
     return NextResponse.json({ success: true, id });

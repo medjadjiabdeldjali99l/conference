@@ -1,36 +1,15 @@
+// app/page.tsx (page publique corrigée)
 "use client";
-import { useState, useEffect } from "react";
-import { QuestionCount } from "@/types/question";
+import { useState } from "react";
 
 export default function PublicForm() {
   const [prenom, setPrenom] = useState<string>("");
   const [question, setQuestion] = useState<string>("");
-  const [count, setCount] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-
-  useEffect(() => {
-    checkQuestionCount();
-  }, []);
-
-  const checkQuestionCount = async (): Promise<void> => {
-    try {
-      const res = await fetch("/api/check-limit");
-      const data: QuestionCount = await res.json();
-      setCount(data.count);
-    } catch (error) {
-      console.error("Erreur:", error);
-    }
-  };
 
   const submitQuestion = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setIsSubmitting(true);
-
-    if (count >= 3) {
-      alert("Maximum 3 questions par personne!");
-      setIsSubmitting(false);
-      return;
-    }
 
     if (!prenom.trim() || !question.trim()) {
       alert("Veuillez remplir tous les champs");
@@ -50,7 +29,6 @@ export default function PublicForm() {
       if (response.ok) {
         setPrenom("");
         setQuestion("");
-        setCount((prev) => prev + 1);
         alert("✅ Question envoyée avec succès!");
       } else {
         const error = await response.json();
@@ -64,16 +42,14 @@ export default function PublicForm() {
     }
   };
 
-  const questionsLeft = 3 - count;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
-      <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-8 px-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
-          <h1 className="text-2xl font-bold text-center">🎤 Votre Question</h1>
-          <p className="text-blue-100 text-center mt-2">
-            Posez votre question pour la conférence
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white text-center">
+          <h1 className="text-2xl font-bold">🎤 Posez Votre Question</h1>
+          <p className="text-blue-100 mt-2">
+            Votre question sera traitée par notre équipe
           </p>
         </div>
 
@@ -81,14 +57,10 @@ export default function PublicForm() {
         <div className="p-6">
           <form onSubmit={submitQuestion} className="space-y-4">
             <div>
-              <label
-                htmlFor="prenom"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Votre prénom *
               </label>
               <input
-                id="prenom"
                 type="text"
                 placeholder="Ex: Jean, Marie..."
                 value={prenom}
@@ -100,14 +72,10 @@ export default function PublicForm() {
             </div>
 
             <div>
-              <label
-                htmlFor="question"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Votre question *
               </label>
               <textarea
-                id="question"
                 placeholder="Tapez votre question ici..."
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
@@ -118,38 +86,16 @@ export default function PublicForm() {
               />
             </div>
 
-            {/* Counter */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-blue-700 font-medium">
-                  Questions restantes:
-                </span>
-                <span
-                  className={`font-bold ${
-                    questionsLeft === 0 ? "text-red-600" : "text-blue-600"
-                  }`}
-                >
-                  {questionsLeft}/3
-                </span>
-              </div>
-              {questionsLeft === 0 && (
-                <p className="text-red-600 text-xs mt-1">
-                  Vous avez atteint la limite de questions
-                </p>
-              )}
-            </div>
-
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isSubmitting || questionsLeft === 0}
+              disabled={isSubmitting}
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-800 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center">
                   <svg
                     className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
