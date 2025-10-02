@@ -88,6 +88,22 @@ export async function getAllQuestions(): Promise<Question[]> {
   }
 }
 
+// Ajoute cette fonction dans lib/database-postgres.ts
+export async function getHistoryQuestions(): Promise<Question[]> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      "SELECT * FROM questions WHERE status = 'read' ORDER BY viewed_at DESC "
+    );
+    return result.rows;
+  } catch (error) {
+    console.error("Error getting history questions:", error);
+    return [];
+  } finally {
+    client.release();
+  }
+}
+
 export async function getPendingQuestions(): Promise<Question[]> {
   const client = await pool.connect();
   try {

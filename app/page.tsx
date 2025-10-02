@@ -1,6 +1,7 @@
 // app/page.tsx (page publique corrigée)
 "use client";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function PublicForm() {
   const [prenom, setPrenom] = useState<string>("");
@@ -29,14 +30,16 @@ export default function PublicForm() {
       if (response.ok) {
         setPrenom("");
         setQuestion("");
-        alert("✅ Question envoyée avec succès!");
+        // alert("✅ Question envoyée avec succès!");
+        toast.success("✅ Question envoyée avec succès!");
       } else {
         const error = await response.json();
         alert(`❌ Erreur: ${error.error}`);
       }
     } catch (error) {
       console.error("Erreur:", error);
-      alert("❌ Erreur lors de l&apos;envoi");
+      // alert("❌ Erreur lors de l&apos;envoi");
+      toast.error("❌ Erreur lors de l'envoi");
     } finally {
       setIsSubmitting(false);
     }
@@ -65,6 +68,7 @@ export default function PublicForm() {
                 placeholder="Ex: Jean, Marie..."
                 value={prenom}
                 onChange={(e) => setPrenom(e.target.value)}
+                maxLength={30}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 disabled={isSubmitting}
@@ -81,6 +85,7 @@ export default function PublicForm() {
                 onChange={(e) => setQuestion(e.target.value)}
                 required
                 rows={4}
+                maxLength={300}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
                 disabled={isSubmitting}
               />
