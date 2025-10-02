@@ -406,7 +406,7 @@ export default function AdminPage() {
           {historyQuestions.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <div className="text-4xl mb-2">📋</div>
-              Aucune question dans l'historique
+              Aucune question dans l&apos;historique
             </div>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
