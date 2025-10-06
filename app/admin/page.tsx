@@ -9,11 +9,11 @@ export default function AdminPage() {
   const [historyQuestions, setHistoryQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (pendingQuestions.length === 1 && currentQuestion === null) {
-      showNextQuestion();
-    }
-  }, [pendingQuestions.length, currentQuestion]);
+  // useEffect(() => {
+  //   if (pendingQuestions.length === 1 && currentQuestion === null) {
+  //     showNextQuestion();
+  //   }
+  // }, [pendingQuestions.length, currentQuestion]);
 
   // useEffect(() => {
   //   loadQuestions();
@@ -44,7 +44,23 @@ export default function AdminPage() {
   //     setIsLoading(false);
   //   }
   // };
+  const skipQuestion = async (id: number): Promise<void> => {
+    try {
+      const response = await fetch("/api/admin/skip", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id }),
+      });
 
+      if (response.ok) {
+        await loadQuestions(); // Recharge les questions
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+    }
+  };
   useEffect(() => {
     loadQuestions();
     // Polling toutes les 2 secondes pour les nouvelles questions
@@ -54,16 +70,15 @@ export default function AdminPage() {
 
   const loadQuestions = async (): Promise<void> => {
     try {
-      const [currentRes, pendingRes, historyRes] = await Promise.all([
-        fetch("/api/admin/current"),
+      const [pendingRes, historyRes] = await Promise.all([
         fetch("/api/admin/pending"),
         fetch("/api/admin/history"),
       ]);
 
-      if (currentRes.ok) {
-        const current = await currentRes.json();
-        setCurrentQuestion(current);
-      }
+      // if (currentRes.ok) {
+      //   const current = await currentRes.json();
+      //   setCurrentQuestion(current);
+      // }
 
       if (pendingRes.ok) {
         const pending = await pendingRes.json();
@@ -81,29 +96,29 @@ export default function AdminPage() {
     }
   };
 
-  const showNextQuestion = async (): Promise<void> => {
-    if (pendingQuestions.length === 0) return;
+  // const showNextQuestion = async (): Promise<void> => {
+  //   if (pendingQuestions.length === 0) return;
 
-    try {
-      const nextQuestion = pendingQuestions[0];
-      const response = await fetch("/api/admin/next", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id: nextQuestion.id }),
-      });
+  //   try {
+  //     const nextQuestion = pendingQuestions[0];
+  //     const response = await fetch("/api/admin/next", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ id: nextQuestion.id }),
+  //     });
 
-      if (response.ok) {
-        await loadQuestions();
-      }
-    } catch (error) {
-      console.error("Erreur:", error);
-    }
-  };
+  //     if (response.ok) {
+  //       await loadQuestions();
+  //     }
+  //   } catch (error) {
+  //     console.error("Erreur:", error);
+  //   }
+  // };
 
-  const markAsRead = async (): Promise<void> => {
-    if (!currentQuestion) return;
+  const markAsRead = async (id: number): Promise<void> => {
+    // if (!currentQuestion) return;
 
     try {
       const response = await fetch("/api/admin/read", {
@@ -111,13 +126,13 @@ export default function AdminPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ id: currentQuestion.id }),
+        body: JSON.stringify({ id }),
       });
 
       if (response.ok) {
         await loadQuestions();
       }
-      showNextQuestion();
+      // showNextQuestion();
     } catch (error) {
       console.error("Erreur:", error);
     }
@@ -146,7 +161,7 @@ export default function AdminPage() {
       if (response.ok) {
         await loadQuestions();
       }
-      showNextQuestion();
+      // showNextQuestion();
     } catch (error) {
       console.error("Erreur:", error);
     }
@@ -197,7 +212,7 @@ export default function AdminPage() {
             </div>
           </div>
         </div> */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        {/* <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h1 className="text-3xl font-bold text-gray-800 text-center">
             🎯 Tableau de Bord Admin - Questions
           </h1>
@@ -229,12 +244,39 @@ export default function AdminPage() {
               <div className="text-sm text-gray-800">Total</div>
             </div>
           </div>
+        </div> */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h1 className="text-3xl font-bold text-gray-800 text-center">
+            🎯 Tableau de Bord Admin - Questions
+          </h1>
+          <div className="mt-4 grid grid-cols-3 gap-4">
+            <div className="bg-blue-50 p-4 rounded-lg text-center">
+              <div className="text-2xl font-bold text-blue-600">
+                {pendingQuestions.length}
+              </div>
+              <div className="text-sm text-blue-800">En attente</div>
+            </div>
+            <div className="bg-purple-50 p-4 rounded-lg text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {historyQuestions.length}
+              </div>
+              <div className="text-sm text-purple-800">Historique</div>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg text-center">
+              <div className="text-2xl font-bold text-gray-600">
+                {pendingQuestions.length +
+                  (currentQuestion ? 1 : 0) +
+                  historyQuestions.length}
+              </div>
+              <div className="text-sm text-gray-800">Total</div>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Question Actuelle */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-md p-6">
+        {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6"> */}
+        {/* Question Actuelle */}
+        {/* <div className="lg:col-span-2"> */}
+        {/* <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
                 📊 Question Actuelle
               </h2>
@@ -266,7 +308,7 @@ export default function AdminPage() {
                       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       ⬅️ Précédent
-                    </button> */}
+                    </button> 
                     <button
                       onClick={() => deleteQuestion(currentQuestion.id)}
                       className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
@@ -291,10 +333,10 @@ export default function AdminPage() {
                   )}
                 </div>
               )}
-            </div>
+            </div> */}
 
-            {/* NOUVEAU BLOC HISTORIQUE - Positionné en dessous */}
-            {/* <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+        {/* NOUVEAU BLOC HISTORIQUE - Positionné en dessous */}
+        {/* <div className="bg-white rounded-lg shadow-md p-6 mt-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
                 📜 Historique des Questions ({historyQuestions.length})
               </h2>
@@ -344,59 +386,208 @@ export default function AdminPage() {
                 </div>
               )}
             </div> */}
-          </div>
+        {/* </div> */}
 
-          {/* File d'attente (reste à droite) */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              ⏳ File d&apos;attente ({pendingQuestions.length})
-            </h2>
+        {/* File d'attente (reste à droite) */}
 
-            {pendingQuestions.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <div className="text-4xl mb-2">🎉</div>
-                Aucune question en attente
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-80 overflow-y-auto">
-                {pendingQuestions.map((question, index) => (
-                  <div
-                    key={question.id}
-                    className={`border rounded-lg p-4 ${
-                      index === 0
-                        ? "border-yellow-500 bg-yellow-50"
-                        : "border-gray-200 bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-2 ">
-                      <span className="font-semibold text-gray-800">
-                        {question.prenom}
+        {/* <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            ⏳ File d&apos;attente ({pendingQuestions.length})
+          </h2>
+
+          {pendingQuestions.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-4xl mb-2">🎉</div>
+              Aucune question en attente
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-100 overflow-y-auto">
+              {pendingQuestions.map((question, index) => (
+                <div
+                  key={question.id}
+                  className={`border rounded-lg p-4 ${
+                    index === 0
+                      ? "border-yellow-500 bg-yellow-50"
+                      : "border-gray-200 bg-gray-50"
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2 ">
+                    <span className="font-semibold text-gray-800">
+                      {question.prenom}
+                    </span>
+                    {index === 0 && (
+                      <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded">
+                        Suivante
                       </span>
-                      {index === 0 && (
-                        <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded">
-                          Suivante
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2 line-clamp-2 break-words overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
-                      {question.question}
-                    </p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-500">
-                        {new Date(question.created_at).toLocaleTimeString()}
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-2 break-words overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
+                    {question.question}
+                  </p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500">
+                      {new Date(question.created_at).toLocaleTimeString()}
+                    </span>
+                    <button
+                      onClick={() => deleteQuestion(question.id)}
+                      className="text-red-600 hover:text-red-800 text-xs"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div> */}
+        {/* <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            ⏳ File d&apos;attente ({pendingQuestions.length})
+          </h2>
+
+          {pendingQuestions.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-4xl mb-2">🎉</div>
+              Aucune question en attente
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-100 overflow-y-auto">
+              {pendingQuestions.map((question, index) => (
+                <div
+                  key={question.id}
+                  className={`border rounded-lg p-4 ${
+                    index === 0
+                      ? "border-yellow-500 bg-yellow-50"
+                      : "border-gray-200 bg-gray-50"
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="font-semibold text-gray-800">
+                      {question.prenom}
+                    </span>
+                    {index === 0 && (
+                      <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded">
+                        Suivante
                       </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2 md:line-clamp-2 break-words overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
+                    {question.question}
+                  </p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500">
+                      {new Date(question.created_at).toLocaleTimeString()}
+                    </span>
+                    {/* <div className="flex gap-2">
+                      {/* {index === 0 && ( 
+                      <button
+                        onClick={markAsRead}
+                        className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition-colors text-xs"
+                      >
+                        ✅ Lu
+                      </button>
+                      {/* // )}
                       <button
                         onClick={() => deleteQuestion(question.id)}
                         className="text-red-600 hover:text-red-800 text-xs"
                       >
                         Supprimer
                       </button>
+                    </div> 
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => markAsRead(question.id)}
+                        className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition-colors text-xs"
+                      >
+                        ✅ Lu
+                      </button>
+
+                      <button
+                        onClick={() => skipQuestion(question.id)}
+                        className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors text-xs"
+                      >
+                        ⏭️ Skip
+                      </button>
+                      <button
+                        onClick={() => deleteQuestion(question.id)}
+                        className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors text-xs"
+                      >
+                        Supprimer
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div> 
+        
+
+        {/* </div> */}
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            ⏳ File d&apos;attente ({pendingQuestions.length})
+          </h2>
+
+          {pendingQuestions.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-4xl mb-2">🎉</div>
+              Aucune question en attente
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-100 overflow-y-auto">
+              {pendingQuestions.map((question, index) => (
+                <div
+                  key={question.id}
+                  className={`border rounded-lg p-4 ${
+                    index === 0
+                      ? "border-yellow-500 bg-yellow-50"
+                      : "border-gray-200 bg-gray-50"
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="font-semibold text-gray-800">
+                      {question.prenom}
+                    </span>
+                    {index === 0 && (
+                      <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded">
+                        Suivante
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2 md:line-clamp-2 break-words overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
+                    {question.question}
+                  </p>
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                    <span className="text-xs text-gray-500 order-2 sm:order-1">
+                      {new Date(question.created_at).toLocaleTimeString()}
+                    </span>
+                    <div className="flex gap-2 order-1 sm:order-2">
+                      <button
+                        onClick={() => markAsRead(question.id)}
+                        className="bg-green-600 text-white px-2 py-1 rounded-lg hover:bg-green-700 transition-colors text-xs flex-1 sm:flex-none"
+                      >
+                        ✅ Lu
+                      </button>
+                      <button
+                        onClick={() => skipQuestion(question.id)}
+                        className="bg-blue-600 text-white px-2 py-1 rounded-lg hover:bg-blue-700 transition-colors text-xs flex-1 sm:flex-none"
+                      >
+                        ⏭️ Skip
+                      </button>
+                      <button
+                        onClick={() => deleteQuestion(question.id)}
+                        className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 transition-colors text-xs flex-1 sm:flex-none"
+                      >
+                        🗑️ Supp
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div className="bg-white rounded-lg shadow-md p-6 mt-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">

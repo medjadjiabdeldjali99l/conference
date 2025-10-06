@@ -119,6 +119,20 @@ export async function getPendingQuestions(): Promise<Question[]> {
   }
 }
 
+export async function skipQuestion(id: number): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query(
+      "UPDATE questions SET created_at = NOW() WHERE id = $1",
+      [id]
+    );
+  } catch (error) {
+    console.error("Error skipping question:", error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 export async function getCurrentQuestion(): Promise<Question | null> {
   const client = await pool.connect();
   try {
